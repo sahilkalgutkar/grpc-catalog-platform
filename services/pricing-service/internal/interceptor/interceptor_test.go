@@ -52,6 +52,30 @@ func TestLogging_NoRequestIDStillHandles(t *testing.T) {
 	require.Contains(t, buf.String(), "NotFound")
 }
 
+// TestLogging_IncomingMetadataWithoutRequestIDKey covers the branch
+// requestIDFromContext takes when metadata.FromIncomingContext succeeds
+// (ok == true) but the x-request-id key was never set — e.g. a caller that
+// sends other metadata but no request ID. TestLogging_NoRequestIDStillHandles
+// covers the ok == false case (no incoming metadata at all); this test
+// covers the other empty-string path, where metadata is present but the key
+// lookup comes back empty.
+func TestLogging_IncomingMetadataWithoutRequestIDKey(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, nil))
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		return "response", nil
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/x"}
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("other-key", "other-value"))
+
+	resp, err := interceptor.Logging(logger)(ctx, nil, info, handler)
+
+	require.NoError(t, err)
+	require.Equal(t, "response", resp)
+	require.Contains(t, buf.String(), `"request_id":""`)
+}
+
 func TestRecovery_PassesThroughNormalCall(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(&bytes.Buffer{}, nil))
 

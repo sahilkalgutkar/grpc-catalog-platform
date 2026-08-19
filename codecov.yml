@@ -19,3 +19,15 @@ flags:
   pricing-service:
     paths:
       - services/pricing-service/
+
+# cmd/server/main.go in each service is startup wiring — dial pricing-service,
+# register the gRPC/gateway handlers, listen, block on Serve()/ListenAndServe(),
+# os.Exit(1) on failure. There's no branching business logic left to assert on
+# once it's pulled out into internal/{config,client,server} (which are covered
+# and where these tests actually live); what's left is either unreachable
+# without faking a listener/dial failure or is exercised for real by the
+# docker-compose smoke test, not a unit test. Excluding it here keeps the 80%
+# target measuring the code that has meaningful branches, instead of padding
+# a startup func with tests that assert grpc.NewServer() didn't panic.
+ignore:
+  - "services/*/cmd/server/main.go"
