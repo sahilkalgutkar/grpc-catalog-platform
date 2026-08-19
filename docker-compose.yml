@@ -1,0 +1,17 @@
+services:
+  pricing-service:
+    build:
+      context: .
+      dockerfile: services/pricing-service/Dockerfile
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: services/catalog-service/Dockerfile
+    ports:
+      - "9090:9090"
+      - "8080:8080"
+    environment:
+      PRICING_SERVICE_ADDR: pricing-service:9091
+    depends_on:
+      - pricing-service

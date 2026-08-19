@@ -1,0 +1,7 @@
+go 1.25.0
+
+use (
+	./gen
+	./services/pricing-service
+	./services/catalog-service
+)

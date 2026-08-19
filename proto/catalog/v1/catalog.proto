@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package catalog.v1;
+
+option go_package = "github.com/skalgutkar/grpc-catalog-platform/gen/catalog/v1;catalogv1";
+
+import "google/api/annotations.proto";
+
+// ProductService is catalog-service's public API. It is served twice from
+// the same handler code: natively over gRPC, and over REST via
+// grpc-gateway using the google.api.http bindings below — one set of
+// business logic, two transports, no hand-maintained REST layer.
+service ProductService {
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse) {
+    option (google.api.http) = {
+      get: "/v1/products/{id}"
+    };
+  }
+
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse) {
+    option (google.api.http) = {
+      get: "/v1/products"
+    };
+  }
+}
+
+message GetProductRequest {
+  string id = 1;
+  // Optional; when set, GetProductResponse includes a quantity-based
+  // price computed by calling pricing-service. Maps to ?quantity=N on
+  // the REST gateway since it isn't part of the URL path.
+  int32 quantity = 2;
+}
+
+message GetProductResponse {
+  string id = 1;
+  string name = 2;
+  int64 unit_price_cents = 3;
+  int32 quantity = 4;
+  int64 total_price_cents = 5;
+  int32 discount_percent = 6;
+}
+
+message ListProductsRequest {
+  int32 page_size = 1;
+}
+
+message ListProductsResponse {
+  repeated ProductSummary products = 1;
+}
+
+message ProductSummary {
+  string id = 1;
+  string name = 2;
+  int64 unit_price_cents = 3;
+}
