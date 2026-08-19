@@ -65,7 +65,7 @@ service, so the wire contract can't drift between them.
 
 ## Running it locally
 
-Requires Docker and Docker Compose.
+### With Docker Compose
 
 ```bash
 docker compose up --build
@@ -82,6 +82,55 @@ curl "http://localhost:8080/v1/products/p1?quantity=50"
 pricing-service isn't published on a host port — nothing outside the compose
 network is meant to reach it directly, matching the "internal-only" design
 in its own proto file.
+
+### Without Docker
+
+Each service reads its config from environment variables (see
+`internal/config/config.go` in each) and falls back to a sane local default
+for every one of them, so I can just run both with `go run` in two terminals
+and nothing else needs to be set:
+
+```bash
+# terminal 1 — pricing-service
+cd services/pricing-service
+go run ./cmd/server
+```
+
+```bash
+# terminal 2 — catalog-service
+cd services/catalog-service
+go run ./cmd/server
+```
+
+That's enough as-is, because catalog-service's default `PRICING_SERVICE_ADDR`
+(`localhost:9091`) already matches pricing-service's default `GRPC_PORT`
+(`9091`). I only need to override anything if I want different ports or I'm
+pointing catalog-service at a pricing-service running somewhere else:
+
+| Service | Variable | Default | What it's for |
+|---|---|---|---|
+| catalog-service | `GRPC_PORT` | `9090` | port the native gRPC `ProductService` listens on |
+| catalog-service | `HTTP_PORT` | `8080` | port the REST gateway listens on |
+| catalog-service | `PRICING_SERVICE_ADDR` | `localhost:9091` | host:port I dial for pricing-service's gRPC `PricingService` |
+| pricing-service | `GRPC_PORT` | `9091` | port the gRPC `PricingService` listens on |
+
+For example, to run pricing-service on a non-default port and point
+catalog-service at it:
+
+```bash
+# terminal 1
+cd services/pricing-service
+GRPC_PORT=9500 go run ./cmd/server
+```
+
+```bash
+# terminal 2
+cd services/catalog-service
+PRICING_SERVICE_ADDR=localhost:9500 go run ./cmd/server
+```
+
+Then the same `curl` commands from the Docker Compose section above work
+against `localhost:8080`.
 
 ## Development
 
