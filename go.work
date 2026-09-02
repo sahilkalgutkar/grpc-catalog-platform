@@ -1,5 +1,11 @@
 go 1.25.0
 
+// go.work.sum is committed next to this file on purpose. CI runs go vet/build/test
+// from services/<name>, and the go command still walks up to this workspace from
+// there, so what CI verifies is the workspace build list — not either service's
+// module graph on its own. Those checksums belong in version control with go.work.
+// The Docker builds are the exception: their contexts copy only gen/ and one
+// service, so no go.work reaches the image and they resolve in plain module mode.
 use (
 	./gen
 	./services/pricing-service
