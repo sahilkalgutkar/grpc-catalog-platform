@@ -83,6 +83,24 @@ pricing-service isn't published on a host port — nothing outside the compose
 network is meant to reach it directly, matching the "internal-only" design
 in its own proto file.
 
+catalog-service's two host ports are both overridable, since 8080 is the
+default for most things and 9090 is Prometheus':
+
+| Port | Purpose | Host port override |
+|---|---|---|
+| 8080 | REST gateway | `GATEWAY_HOST_PORT` |
+| 9090 | gRPC | `GRPC_HOST_PORT` |
+
+Set them inline or in `.env` (see `.env.example`):
+
+```bash
+GATEWAY_HOST_PORT=8090 docker compose up --build
+curl http://localhost:8090/v1/products
+```
+
+Only the host side moves — catalog-service still reaches pricing-service on
+`pricing-service:9091` inside the network either way.
+
 ### Without Docker
 
 Each service reads its config from environment variables (see
